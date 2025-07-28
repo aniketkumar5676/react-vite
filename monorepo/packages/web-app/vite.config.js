@@ -3,8 +3,7 @@ import react from '@vitejs/plugin-react'
 import federation from '@originjs/vite-plugin-federation'
 
 export default defineConfig(({ command }) => {
-  // eslint-disable-next-line no-undef
-  const isSSRBuild = command === 'build' && process.argv.includes('--ssr'); // Check for --ssr flag
+  const isSSRBuild = command === 'build' && process.argv.includes('--ssr');
 
   return {
     plugins: [
@@ -17,26 +16,31 @@ export default defineConfig(({ command }) => {
           profile: 'http://localhost:5001/assets/remoteEntry.js',
         },
         exposes: {
-          './store': './src/store/index.js',
+          './store': './src/client/store/index.js',
         },
-        shared: isSSRBuild ? [] : ['react'], // Conditional sharing based on --ssr flag
+        shared: isSSRBuild ? [] : ['react'],
       }),
     ],
     build: {
       target: 'esnext',
       minify: false,
       cssCodeSplit: false,
-      ssr: isSSRBuild ? 'src/entry-server.jsx' : undefined, // Specify entry for SSR build
+      ssr: isSSRBuild ? true : undefined,
       outDir: isSSRBuild ? 'dist/server' : 'dist',
       rollupOptions: {
+        input: isSSRBuild ? {
+          'entry-server': 'src/ssr/entry-server.jsx',
+          'ServerPage': 'src/server/pages/ServerPage.jsx',
+        } : undefined,
         output: {
-          format: isSSRBuild ? 'esm' : undefined, // Output format for SSR build
+          format: isSSRBuild ? 'esm' : undefined,
+          entryFileNames: isSSRBuild ? `[name].js` : undefined,
         },
-        external: isSSRBuild ? ['react-dom/server'] : [], // Mark react-dom/server as external for SSR
+        external: isSSRBuild ? ['react-dom/server', 'react-router-dom'] : [],
       },
     },
     ssr: {
-      noExternal: ['react-router-dom'], // Ensure react-router-dom/server is bundled
+      noExternal: [],
     },
     resolve: {
       alias: {

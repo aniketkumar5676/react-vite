@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "npm run build && npx vite preview --port 5000",
-    "build:server": "npm run build && vite build --ssr src/ssr/entry-server.jsx && node server.js"
+    "build:server": "vite build && vite build --ssr && node server.js"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",

@@ -1,8 +1,8 @@
-import { JSDOM } from 'jsdom';
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 const app = express();
 const port = 5000;
@@ -13,51 +13,64 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use(express.static(path.resolve(__dirname, 'dist')));
 
 app.get('*', async (req, res) => {
-  // Redirect all non-root requests to the root URL on refresh
-  if (req.url !== '/') {
-    return res.redirect('/');
-  }
-
   try {
-    const nonce = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+    // Generate a secure nonce
+    const nonce = crypto.randomBytes(16).toString('base64');
 
-    // Import the server-side render function
-    const { render } = await import('./dist/server/entry-server.js');
+    // Import SSR bundles
+    const { render: renderApp } = await import('./dist/server/entry-server.js');
+    const { render: renderServerPage } = await import('./dist/server/ServerPage.js');
 
-    const { html: appHtml } = await render(req.url);
+    // Read the index.html template
+    let templateHtml = await fs.readFile(path.resolve(__dirname, 'dist', 'index.html'), 'utf-8');
 
-    let html = await fs.readFile(path.resolve(__dirname, 'dist', 'index.html'), 'utf-8');
-
-    // Inject rendered app and nonce script
-    html = html.replace(
-      '<div id="root"></div>',
-      `<div id="root">${appHtml}</div>\n    <script nonce="${nonce}">window.__NONCE__ = '${nonce}';</script>`
+    // Inject the nonce into a meta tag
+    templateHtml = templateHtml.replace(
+      '<head>',
+      `<head>\n    <meta name="csp-nonce" content="${nonce}">`
     );
 
-    // Use JSDOM to inject nonce into all script, link, and style tags
-    const dom = new JSDOM(html);
-    const { document } = dom.window;
+    // Set headers
+    res.status(200).set({
+      'Content-Type': 'text/html',
+      'Content-Security-Policy': `script-src 'self' 'nonce-${nonce}'; style-src 'self' 'nonce-${nonce}'`
+    });
 
-    const elements = document.querySelectorAll('script, link, style');
-    elements.forEach(element => {
-      if (!element.hasAttribute('nonce')) {
-        element.setAttribute('nonce', nonce);
+    // Split the template
+    const [htmlStart, htmlEnd] = templateHtml.split('<div id="root"></div>');
+
+    let stream, context, didError;
+
+    if (req.url === '/server-page') {
+      ({ stream, context, didError } = renderServerPage(req.url));
+    } else {
+      ({ stream, context, didError } = renderApp(req.url));
+    }
+
+    if (context.url) {
+      return res.redirect(302, context.url);
+    }
+
+    res.write(htmlStart + '<div id="root">');
+
+    stream.pipe(res);
+
+    stream.on('end', () => {
+      res.end('</div>' + htmlEnd);
+    });
+
+    stream.on('error', (err) => {
+      console.error('Stream error:', err);
+      if (!res.headersSent) {
+        res.status(500).end('Internal Server Error');
       }
     });
 
-    html = dom.serialize();
-
-    // Set CSP header
-    res.setHeader(
-      'Content-Security-Policy',
-      `script-src 'self' 'nonce-${nonce}'; style-src 'self' 'nonce-${nonce}'`
-    );
-
-    console.log('Response Headers:', res.getHeaders());
-    res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
   } catch (e) {
-    console.error(e);
-    res.status(500).end('Internal Server Error');
+    console.error('❌ Server error:', e);
+    if (!res.headersSent) {
+      res.status(500).end('Internal Server Error');
+    }
   }
 });
 

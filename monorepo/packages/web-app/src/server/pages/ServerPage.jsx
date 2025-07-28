@@ -1,20 +1,23 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { StaticRouter } from 'react-router-dom/server';
-import App from '../client/pages/App';
-import ClientOnly from '../client/ClientOnly';
 
-export function render(url) {
+// eslint-disable-next-line react-refresh/only-export-components
+const ServerPage = () => {
+  return (
+    <div>
+      <h1>This Page is Server-Rendered!</h1>
+      <p>Current time on server: {new Date().toLocaleString()}</p>
+    </div>
+  );
+};
+
+export function render() {
   const context = {};
   let didError = false;
 
   const stream = ReactDOMServer.renderToPipeableStream(
     <React.StrictMode>
-      <StaticRouter location={url} context={context}>
-        <ClientOnly>
-          <App />
-        </ClientOnly>
-      </StaticRouter>
+      <ServerPage />
     </React.StrictMode>,
     {
       onShellReady() {

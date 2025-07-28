@@ -18,7 +18,9 @@ const Core = () => {
   } = theme.useToken();
 
   const redirect=()=>{
-    window.location.reload();
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
   }
   return (
     <Layout style={{ minHeight: '100vh',marginTop:'20px' }}>
