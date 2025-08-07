@@ -1,0 +1,15 @@
+{
+  "name": "nextjs-multizone-project",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "login-app",
+    "dashboard-app",
+    "shared-store"
+  ],
+  "scripts": {
+    "dev:login": "npm run dev --workspace=login-app",
+    "dev:dashboard": "npm run dev --workspace=dashboard-app",
+    "dev": "npm run dev:login & npm run dev:dashboard"
+  }
+}
