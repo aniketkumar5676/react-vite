@@ -5,11 +5,13 @@
   "workspaces": [
     "login-app",
     "dashboard-app",
+    "account-app",
     "shared-store"
   ],
   "scripts": {
     "dev:login": "npm run dev --workspace=login-app",
     "dev:dashboard": "npm run dev --workspace=dashboard-app",
-    "dev": "npm run dev:login & npm run dev:dashboard"
+    "dev:account": "npm run dev --workspace=account-app",
+    "dev": "npm run dev:login & npm run dev:dashboard & npm run dev:account"
   }
 }
