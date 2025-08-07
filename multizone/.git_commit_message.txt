@@ -1,0 +1,11 @@
+feat: Add account-app and integrate into monorepo
+
+This commit introduces a new `account-app` to the monorepo, mirroring the structure and UI of the `dashboard-app`.
+
+Key changes include:
+- Duplicated `dashboard-app` to create `account-app`.
+- Updated `package.json` and `package-lock.json` to include `account-app` as a workspace and dependency.
+- Ensured `shared-store` dependency is correctly linked for `login-app`, `dashboard-app`, and `account-app`.
+- Modified `account-app/src/app/page.tsx` to display user's account details and removed unused imports/functions.
+- Configured `account-app/next.config.mjs` with port 3002.
+- Updated navigation links in `dashboard-app/src/app/page.tsx` and `account-app/src/app/page.tsx` to reflect new app routes.
